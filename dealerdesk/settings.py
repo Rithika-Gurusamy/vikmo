@@ -5,6 +5,7 @@ DealerDesk: B2B dealer ordering backend for Bengaluru automotive parts distribut
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -24,7 +25,7 @@ DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "t", "yes")
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
     if host.strip()
 ]
 
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     # Third-party apps
     "rest_framework",
     # Local apps
+    "accounts.apps.AccountsConfig",
     "inventory.apps.InventoryConfig",
 ]
 
@@ -124,12 +126,29 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Custom User Model
+AUTH_USER_MODEL = "accounts.User"
+
 
 # Django REST Framework configuration
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
-    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
 }
+
+
+# Simple JWT Configuration
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+

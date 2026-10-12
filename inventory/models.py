@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import CheckConstraint, Index, Q, UniqueConstraint
@@ -144,6 +145,14 @@ class Dealer(models.Model):
     Represents an authorized B2B dealer customer across South India.
     Includes GST compliance information (GSTIN) for tax invoices.
     """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="dealer_profile",
+        help_text="Associated dealer login user account."
+    )
     dealer_code = models.CharField(
         max_length=32,
         unique=True,
