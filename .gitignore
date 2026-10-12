@@ -31,7 +31,3 @@ staticfiles/
 .DS_Store
 Thumbs.db
 
-README.md
-migrations/
-*.md
-requirements.txt

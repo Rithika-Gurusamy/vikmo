@@ -11,9 +11,13 @@ from drf_spectacular.views import (
 )
 
 from accounts.views import DealerTestView, SupplierTestView
+from dealerdesk.views import HealthCheckView
 from inventory.views import DealerPortalView
 
 urlpatterns = [
+    # Required Health Check endpoint
+    path("api/health/", HealthCheckView.as_view(), name="health-check"),
+
     # Dealer Portal UI
     path("", DealerPortalView.as_view(), name="dealer-portal"),
     path("dealer/", DealerPortalView.as_view(), name="dealer-portal-alias"),
