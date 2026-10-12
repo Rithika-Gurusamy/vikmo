@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -20,6 +21,15 @@ class UserRegistrationView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Register a new user (Dealer or Supplier)",
+        request=UserRegistrationSerializer,
+        responses={
+            201: OpenApiResponse(description="User successfully registered with JWT tokens"),
+            400: OpenApiResponse(description="Validation error (duplicate username/email or invalid role)"),
+        },
+    )
     def post(self, request, *args, **kwargs):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -47,6 +57,16 @@ class UserLoginView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Log in with username and password",
+        request=UserLoginSerializer,
+        responses={
+            200: OpenApiResponse(description="Login successful, returns JWT tokens and user info"),
+            401: OpenApiResponse(description="Invalid credentials or inactive account"),
+            400: OpenApiResponse(description="Missing required fields"),
+        },
+    )
     def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -64,7 +84,6 @@ class UserLoginView(APIView):
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
-        # Check if error is credential failure
         errors = serializer.errors
         status_code = status.HTTP_401_UNAUTHORIZED if "detail" in errors else status.HTTP_400_BAD_REQUEST
         return Response(errors, status=status_code)
@@ -76,6 +95,14 @@ class CurrentUserView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Authentication"],
+        summary="Get currently authenticated user details",
+        responses={
+            200: UserSafeSerializer,
+            401: OpenApiResponse(description="Unauthenticated"),
+        },
+    )
     def get(self, request, *args, **kwargs):
         serializer = UserSafeSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -87,6 +114,15 @@ class DealerTestView(APIView):
     """
     permission_classes = [IsAuthenticated, IsDealer]
 
+    @extend_schema(
+        tags=["Role-Based Verification"],
+        summary="Test endpoint restricted to DEALER accounts",
+        responses={
+            200: OpenApiResponse(description="Access granted for Dealer"),
+            401: OpenApiResponse(description="Unauthenticated"),
+            403: OpenApiResponse(description="Forbidden: Requires Dealer account"),
+        },
+    )
     def get(self, request, *args, **kwargs):
         return Response(
             {
@@ -104,6 +140,15 @@ class SupplierTestView(APIView):
     """
     permission_classes = [IsAuthenticated, IsSupplier]
 
+    @extend_schema(
+        tags=["Role-Based Verification"],
+        summary="Test endpoint restricted to SUPPLIER accounts",
+        responses={
+            200: OpenApiResponse(description="Access granted for Supplier"),
+            401: OpenApiResponse(description="Unauthenticated"),
+            403: OpenApiResponse(description="Forbidden: Requires Supplier account"),
+        },
+    )
     def get(self, request, *args, **kwargs):
         return Response(
             {

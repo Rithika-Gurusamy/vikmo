@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party apps
     "rest_framework",
+    "drf_spectacular",
     # Local apps
     "accounts.apps.AccountsConfig",
     "inventory.apps.InventoryConfig",
@@ -140,6 +141,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 
@@ -151,4 +153,18 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+
+# OpenAPI Documentation (drf-spectacular) Configuration
+SPECTACULAR_SETTINGS = {
+    "TITLE": "DealerDesk API",
+    "DESCRIPTION": (
+        "DealerDesk B2B Dealer Ordering Platform API. "
+        "Distributor platform supplying automotive parts to 25 dealers across South India."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+}
+
 

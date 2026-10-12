@@ -213,3 +213,19 @@ class AuthenticationAndRBACркаTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {supplier_token}")
         response = self.client.get(self.dealer_test_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_openapi_schema_generation(self):
+        self.client.credentials()
+        response = self.client.get(reverse("schema"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_swagger_ui_endpoint(self):
+        self.client.credentials()
+        response = self.client.get(reverse("swagger-ui"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_redoc_ui_endpoint(self):
+        self.client.credentials()
+        response = self.client.get(reverse("redoc"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
