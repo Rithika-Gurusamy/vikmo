@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -9,11 +10,35 @@ from .models import SupplierProfile, User
 class UserSafeSerializer(serializers.ModelSerializer):
     """
     Serializer providing safe user information without exposing password hashes.
+    Includes linked dealer profile details when applicable.
     """
+    dealer_profile = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "role", "date_joined")
-        read_only_fields = ("id", "username", "email", "role", "date_joined")
+        fields = ("id", "username", "email", "role", "date_joined", "dealer_profile")
+        read_only_fields = ("id", "username", "email", "role", "date_joined", "dealer_profile")
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_dealer_profile(self, obj):
+        if obj.role == User.Role.DEALER and hasattr(obj, "dealer_profile") and obj.dealer_profile:
+            d = obj.dealer_profile
+            return {
+                "id": d.id,
+                "dealer_code": d.dealer_code,
+                "business_name": d.business_name,
+                "contact_person": d.contact_person,
+                "phone": d.phone,
+                "email": d.email,
+                "gstin": d.gstin,
+                "city": d.city,
+                "state": d.state,
+                "address": d.address,
+                "pincode": d.pincode,
+                "credit_limit": str(d.credit_limit),
+                "outstanding_balance": str(d.outstanding_balance),
+            }
+        return None
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -60,6 +85,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        from decimal import Decimal
         password = validated_data.pop("password")
         role = validated_data.get("role")
 
@@ -73,11 +99,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             is_superuser=False,
         )
 
+        # Create corresponding profile if dealer
+        if role == User.Role.DEALER:
+            from inventory.models import Dealer
+            Dealer.objects.create(
+                user=user,
+                dealer_code=f"DLR-KA-{user.id:04d}",
+                business_name=f"{user.username.replace('_', ' ').title()} Dealership",
+                contact_person=user.username,
+                email=user.email,
+                phone="9876543210",
+                city="Bengaluru",
+                state="Karnataka",
+                address="Peenya Industrial Area, Phase II",
+                pincode="560058",
+                credit_limit=Decimal("500000.00"),
+                outstanding_balance=Decimal("0.00"),
+                is_active=True,
+            )
         # Create corresponding profile if supplier
-        if role == User.Role.SUPPLIER:
+        elif role == User.Role.SUPPLIER:
             SupplierProfile.objects.create(
                 user=user,
-                company_name="",
+                company_name=f"{user.username.replace('_', ' ').title()} Auto Components",
                 supplier_code=f"SUP-{user.id:04d}"
             )
 

@@ -11,9 +11,16 @@ from drf_spectacular.views import (
 )
 
 from accounts.views import DealerTestView, SupplierTestView
+from inventory.views import DealerPortalView
 
 urlpatterns = [
+    # Dealer Portal UI
+    path("", DealerPortalView.as_view(), name="dealer-portal"),
+    path("dealer/", DealerPortalView.as_view(), name="dealer-portal-alias"),
+
+    # Django Administration
     path("admin/", admin.site.urls),
+
     # OpenAPI Schema and Interactive Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
@@ -21,8 +28,10 @@ urlpatterns = [
     # Direct short routes for convenience
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema")),
     path("redoc/", SpectacularRedocView.as_view(url_name="schema")),
+
     # Authentication endpoints
     path("api/auth/", include("accounts.urls")),
+
     # Role-based verification test endpoints
     path("api/dealer/test/", DealerTestView.as_view(), name="dealer-test"),
     path("api/supplier/test/", SupplierTestView.as_view(), name="supplier-test"),

@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from django.views.generic import TemplateView
 
-# Create your views here.
+
+class DealerPortalView(TemplateView):
+    """
+    Serves the modern, responsive DealerDesk Dealer Portal UI.
+    """
+    template_name = "dealer/index.html"

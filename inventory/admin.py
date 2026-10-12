@@ -48,6 +48,7 @@ class InventoryAdmin(admin.ModelAdmin):
 class DealerAdmin(admin.ModelAdmin):
     list_display = (
         "dealer_code",
+        "user",
         "business_name",
         "contact_person",
         "city",
@@ -60,6 +61,7 @@ class DealerAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "state")
     search_fields = (
         "dealer_code",
+        "user__username",
         "business_name",
         "contact_person",
         "email",

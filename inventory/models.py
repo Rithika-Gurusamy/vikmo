@@ -246,6 +246,14 @@ class Dealer(models.Model):
             )
         ]
 
+    def clean(self):
+        super().clean()
+        if self.user and hasattr(self.user, "role") and self.user.role != self.user.Role.DEALER:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                "A dealer profile can only be associated with a user account having the DEALER role."
+            )
+
     def __str__(self):
         return f"{self.dealer_code} - {self.business_name} ({self.city}, {self.state})"
 
