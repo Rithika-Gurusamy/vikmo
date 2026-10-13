@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts.apps.AccountsConfig",
     "inventory.apps.InventoryConfig",
+    "assistant",
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "dealerdesk.pagination.StandardPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "dealerdesk.exceptions.contract_exception_handler",
 }
 
 

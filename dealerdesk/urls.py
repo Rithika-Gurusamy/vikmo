@@ -18,6 +18,12 @@ urlpatterns = [
     # Required Health Check endpoint
     path("api/health/", HealthCheckView.as_view(), name="health-check"),
 
+    # Core Inventory / Products / Dealers / Orders APIs
+    path("api/", include("inventory.urls")),
+
+    # Dealer Assistant API (§9)
+    path("api/", include("assistant.urls")),
+
     # Dealer Portal UI
     path("", DealerPortalView.as_view(), name="dealer-portal"),
     path("dealer/", DealerPortalView.as_view(), name="dealer-portal-alias"),

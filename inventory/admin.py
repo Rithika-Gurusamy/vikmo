@@ -15,15 +15,16 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = (
         "sku",
         "name",
+        "brand",
         "category",
+        "vehicle_fitment",
         "price",
-        "supplier_sku",
-        "supplier_id",
+        "stock",
         "is_active",
         "created_at",
     )
-    list_filter = ("is_active", "category")
-    search_fields = ("sku", "name", "supplier_sku", "supplier_id")
+    list_filter = ("is_active", "category", "brand")
+    search_fields = ("sku", "name", "brand", "vehicle_fitment", "supplier_sku")
     readonly_fields = ("created_at", "updated_at")
     inlines = [InventoryInline]
 
@@ -47,23 +48,20 @@ class InventoryAdmin(admin.ModelAdmin):
 @admin.register(Dealer)
 class DealerAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "dealer_code",
-        "user",
-        "business_name",
-        "contact_person",
+        "name",
         "city",
-        "state",
         "phone",
+        "email",
         "gstin",
         "credit_limit",
         "is_active",
     )
-    list_filter = ("is_active", "state")
+    list_filter = ("is_active", "state", "city")
     search_fields = (
         "dealer_code",
-        "user__username",
-        "business_name",
-        "contact_person",
+        "name",
         "email",
         "phone",
         "gstin",
@@ -78,8 +76,8 @@ class OrderItemInline(admin.TabularInline):
         "product",
         "quantity",
         "unit_price",
-        "gst_rate",
-        "gst_amount",
+        "line_subtotal",
+        "line_tax",
         "line_total",
     )
     readonly_fields = ("created_at", "updated_at")
@@ -92,15 +90,15 @@ class OrderAdmin(admin.ModelAdmin):
         "dealer",
         "status",
         "subtotal",
-        "gst_amount",
-        "total_amount",
+        "tax_total",
+        "grand_total",
         "created_at",
         "confirmed_at",
     )
     list_filter = ("status", "created_at")
     search_fields = (
         "order_number",
-        "dealer__business_name",
+        "dealer__name",
         "dealer__dealer_code",
         "idempotency_key",
     )
@@ -123,10 +121,9 @@ class OrderItemAdmin(admin.ModelAdmin):
         "product",
         "quantity",
         "unit_price",
-        "gst_rate",
-        "gst_amount",
+        "line_subtotal",
+        "line_tax",
         "line_total",
     )
     search_fields = ("order__order_number", "product__sku", "product__name")
-    list_filter = ("gst_rate",)
     readonly_fields = ("created_at", "updated_at")
