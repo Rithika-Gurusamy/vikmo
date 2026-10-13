@@ -31,13 +31,13 @@ def get_active_provider_info() -> Tuple[str, str]:
     - ANTHROPIC_API_KEY
     """
     if os.environ.get("GEMINI_API_KEY"):
-        return "gemini", os.environ["GEMINI_API_KEY"].strip()
+        return "gemini", os.environ["GEMINI_API_KEY"].strip().strip("\"'")
     if os.environ.get("GROQ_API_KEY"):
-        return "groq", os.environ["GROQ_API_KEY"].strip()
+        return "groq", os.environ["GROQ_API_KEY"].strip().strip("\"'")
     if os.environ.get("OPENAI_API_KEY"):
-        return "openai", os.environ["OPENAI_API_KEY"].strip()
+        return "openai", os.environ["OPENAI_API_KEY"].strip().strip("\"'")
     if os.environ.get("ANTHROPIC_API_KEY"):
-        return "anthropic", os.environ["ANTHROPIC_API_KEY"].strip()
+        return "anthropic", os.environ["ANTHROPIC_API_KEY"].strip().strip("\"'")
     return "none", ""
 
 
@@ -266,8 +266,8 @@ class AssistantLLMClient:
         """
         return self._run_openai_compatible_turn(
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-            api_key=api_key,
-            model="gemini-1.5-flash",
+            api_key=api_key.strip("\"'"),
+            model="gemini-2.5-flash",
             system_prompt=system_prompt,
             history=history,
             user_message=user_message,

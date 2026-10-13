@@ -51,12 +51,17 @@
       <a class="nav-item active" data-view="catalogue">
         <span class="icon">📦</span>
         <span>Catalogue</span>
-        <span class="counter-badge">~600 SKUs</span>
+        <span class="counter-badge">600 SKUs</span>
+      </a>
+      <a class="nav-item" data-view="assistant">
+        <span class="icon">🤖</span>
+        <span>Dealer Assistant</span>
+        <span class="counter-badge" style="background: #0284c7; color: #fff;">AI GenAI</span>
       </a>
       <a class="nav-item" data-view="orders">
         <span class="icon">📋</span>
         <span>My Orders</span>
-        <span class="counter-badge">5 Orders</span>
+        <span class="counter-badge" id="sidebarOrderCountBadge">0 Orders</span>
       </a>
       <a class="nav-item" data-view="profile">
         <span class="icon">🏢</span>
@@ -281,8 +286,89 @@
         </div>
       </section>
 
+      <!-- ===================================================================
+           View 4: AI Dealer Assistant View (§9)
+           =================================================================== -->
+      <section id="assistantView" style="display: none;">
+        <div class="assistant-container">
+          <div class="assistant-header">
+            <div class="assistant-title-group">
+              <div class="assistant-avatar">🤖</div>
+              <div class="assistant-info">
+                <h3>VIKMO Dealer Assistant</h3>
+                <p>GenAI LLM with Database Tool Calling &bull; Real Stock &bull; DRAFT Orders</p>
+              </div>
+            </div>
+            <div class="assistant-meta-tags">
+              <span class="meta-badge online">&#9679; LLM Connected</span>
+              <span class="meta-badge model">gemini-2.5-flash</span>
+              <span class="meta-badge dealer" id="assistantDealerBadge">Dealer #1: Sri Lakshmi Motors</span>
+              <button type="button" class="btn-new-session" id="btnNewSession">🔄 New Session</button>
+            </div>
+          </div>
+
+          <!-- Quick Test Prompt Chips for Video Demo -->
+          <div class="assistant-chips-bar">
+            <span class="chip-label">Demo Prompts:</span>
+            <button type="button" class="prompt-chip" data-prompt="Do you have brake pads for Bajaj Pulsar 150?">
+              🔍 1. Search Pulsar 150 Pads
+            </button>
+            <button type="button" class="prompt-chip" data-prompt="How many units of BRK-1044 are currently available in stock?">
+              📦 2. Check Live Stock (BRK-1044)
+            </button>
+            <button type="button" class="prompt-chip" data-prompt="What is the price and brand of the part you just recommended?">
+              💰 3. Follow-up: Price &amp; Brand
+            </button>
+            <button type="button" class="prompt-chip" data-prompt="Please create a draft order for 2 units of BRK-1044">
+              🛒 4. Create Draft Order (2 units)
+            </button>
+            <button type="button" class="prompt-chip" data-prompt="Can you write a poem about motorcycles?">
+              🛡️ 5. Off-Topic Test
+            </button>
+          </div>
+
+          <!-- Messages Scroll View -->
+          <div class="chat-messages-container" id="assistantMessagesContainer">
+            <div class="chat-bubble-row assistant">
+              <div class="chat-avatar-mini bot">🤖</div>
+              <div class="chat-bubble">
+                <div class="bubble-text">
+                  Hello! I am your <strong>VIKMO DealerDesk AI Assistant</strong>.
+                  I am connected directly to your PostgreSQL catalogue and central warehouse inventory.
+
+                  You can ask me to:
+                  &bull; <strong>Search spare parts</strong> for any vehicle (e.g., <em>"Brake pads for Pulsar 150"</em>)
+                  &bull; <strong>Check live stock</strong> and current wholesale pricing
+                  &bull; <strong>Create DRAFT orders</strong> automatically with 18% GST calculation
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Bar -->
+          <div class="assistant-input-area">
+            <input
+              type="text"
+              id="assistantInput"
+              placeholder="Ask about auto parts, check warehouse stock, or create draft orders..."
+              autocomplete="off"
+            />
+            <button type="button" class="btn-assistant-send" id="btnAssistantSend">
+              <span>Send</span>
+              <span>➤</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
+
+  <!-- Floating Quick Assistant Button -->
+  <button type="button" class="floating-assistant-btn" id="openAssistantFloatingBtn" title="Chat with AI Dealer Assistant">
+    <span>🤖</span>
+    <span class="pulse-indicator"></span>
+  </button>
 
   <!-- ===================================================================
        Cart Sliding Drawer
@@ -464,7 +550,7 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Main Application Script (ES Module) -->
-  <script type="module" src="/static/dealer/js/app.js"></script>
+  <!-- Main Application Script -->
+  <script src="/static/dealer/js/app.js"></script>
 </body>
 </html>
