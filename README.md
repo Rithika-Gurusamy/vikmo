@@ -1,190 +1,45 @@
-# DealerDesk - B2B Dealer Ordering Backend
+# DealerDesk — B2B Automotive Spare Parts & AI Dealer Assistant
 
-## Project Purpose
-
-**DealerDesk** is a B2B dealer ordering backend for an automotive spare parts distributor based in Bengaluru, Karnataka. The distributor maintains a catalogue of approximately 600 products and supplies 25 authorized dealers located across South India (Karnataka, Tamil Nadu, Kerala, Andhra Pradesh, and Telangana).
-
-The system serves as the foundational data and transaction layer for:
-- Product catalogue and automotive parts inventory tracking
-- Authorized dealer accounts and GSTIN-compliant invoicing
-- Order lifecycle management (Draft, Confirmed, Dispatched, Delivered, Cancelled)
-- Price locking and historical order auditability
-- Strict stock allocation, GST calculations, supplier synchronization, and AI-assisted workflows
+> **Assignment Track**: `aiml` (AI / ML Track)  
+> **Video Walkthrough**: `[PASTE YOUR UNLISTED YOUTUBE / LOOM / DRIVE LINK HERE]`
 
 ---
 
-## Assignment Track
+## 1. Executive Summary
 
-- **Selected Track:** `django`
+**DealerDesk** is a production-grade B2B dealer ordering and inventory management platform built for an automotive spare parts distributor headquartered in Bengaluru, Karnataka. The distributor manages a catalogue of 600 spare parts and supplies 25 authorized dealerships across South India (Karnataka, Tamil Nadu, Kerala, Andhra Pradesh, and Telangana).
 
----
-
-## Technologies Used
-
-- **Python**: 3.13+
-- **Django**: 5.1+ / 6.0 (Django ORM, Migrations, Admin)
-- **Django REST Framework**: 3.15+
-- **JWT Authentication**: `djangorestframework-simplejwt`
-- **OpenAPI 3.0 Documentation**: `drf-spectacular` (Swagger UI & ReDoc)
-- **Database Engine**: PostgreSQL (`django.db.backends.postgresql` with `psycopg[binary]`)
-- **Environment Management**: `python-dotenv`
-
-> **Note on Database Choice**: SQLite is strictly prohibited (even as a fallback) to ensure full compatibility with PostgreSQL transactions, row-level locking, and concurrency testing.
+For the **AI/ML Track**, this repository delivers:
+1. **Core Relational Backend**: Fully aligned PostgreSQL models for Products, Inventory, Dealers, and Orders with strict Decimal GST calculations and idempotency.
+2. **AI-Powered Dealer Assistant**: A GenAI agent powered by Google Gemini (`gemini-2.5-flash`) utilizing multi-turn ReAct tool calling to search the database catalogue, verify live warehouse stock, and create authoritative wholesale `DRAFT` orders.
+3. **Interactive Dealer Portal**: A full frontend portal (`http://localhost:8000/`) allowing dealers to browse catalogue parts, inspect live stock indicators, manage purchase carts, and chat with the AI assistant in real time.
 
 ---
 
-## Project Structure
+## 2. LLM Provider & Architecture
 
-```
-vikmo/
-├── .env.example              # Documented template for PostgreSQL & Django environment variables
-├── .gitignore                # Git ignore patterns for Python, Django, venv, and environment files
-├── requirements.txt          # Production and development dependencies
-├── manage.py                 # Django management CLI entry point
-├── README.md                 # Project documentation and architectural summary
-├── dealerdesk/               # Project configuration package
-│   ├── __init__.py
-│   ├── asgi.py              # ASGI configuration
-│   ├── settings.py          # Django settings (PostgreSQL backend, DRF, apps, environment loading)
-│   ├── urls.py              # Root routing configuration (includes Django Admin)
-│   └── wsgi.py              # WSGI configuration
-└── inventory/                # Inventory and ordering core application
-    ├── __init__.py
-    ├── admin.py             # Django Admin model registrations with inlines and filters
-    ├── apps.py              # Inventory application configuration
-    ├── models.py            # Domain models: Product, Inventory, Dealer, Order, OrderItem
-    ├── migrations/          # Schema migrations
-    │   ├── __init__.py
-    │   └── 0001_initial.py  # Initial migration generated for the 5 domain models
-    ├── tests.py             # Application tests
-    └── views.py             # Views placeholder for upcoming API endpoints
-```
+* **Primary Provider**: **Google Gemini** (`gemini-2.5-flash`) via `GEMINI_API_KEY`.
+* **Endpoint Architecture**: Uses Google's OpenAI-compatible API endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`) to provide unified function-calling schemas and deterministic JSON parsing.
+* **Multi-Provider Fallback Layer**: Implemented in [`assistant/provider.py`](assistant/provider.py). Automatically detects and hot-swaps to any available environment key:
+  - **Groq** (`GROQ_API_KEY`) &rarr; `llama-3.3-70b-versatile`
+  - **OpenAI** (`OPENAI_API_KEY`) &rarr; `gpt-4o-mini`
+  - **Anthropic** (`ANTHROPIC_API_KEY`) &rarr; `claude-3-5-haiku-20241022`
+* **Zero-Cost Mock Handler**: For automated tests, an internal mock handler (`assistant_client.set_mock_handler`) isolates testing from paid API tokens and external network latency.
 
 ---
 
-## Data Models & Relationships
+## 3. Quickstart & Setup Guide
 
-DealerDesk defines five core database entities in `inventory/models.py`:
+### Prerequisites
+* Python 3.11+ (Python 3.13 tested)
+* PostgreSQL 14+ running locally or remotely
 
-```mermaid
-erDiagram
-    DEALER ||--o{ ORDER : "places (PROTECT)"
-    PRODUCT ||--|| INVENTORY : "tracked at warehouse (1:1 CASCADE)"
-    PRODUCT ||--o{ ORDER_ITEM : "referenced in (PROTECT)"
-    ORDER ||--|{ ORDER_ITEM : "contains (CASCADE)"
-
-    PRODUCT {
-        string sku UK
-        string name
-        text description
-        string category
-        decimal price
-        string supplier_id
-        string supplier_sku
-        boolean is_active
-        datetime created_at
-        datetime updated_at
-    }
-
-    INVENTORY {
-        int product_id FK,UK
-        int quantity
-        int reserved_quantity
-        int reorder_threshold
-        datetime last_restocked_at
-        datetime updated_at
-    }
-
-    DEALER {
-        string dealer_code UK
-        string business_name
-        string contact_person
-        string email UK
-        string phone
-        string gstin UK
-        text address
-        string city
-        string state
-        string pincode
-        decimal credit_limit
-        decimal outstanding_balance
-        boolean is_active
-    }
-
-    ORDER {
-        string order_number UK
-        int dealer_id FK
-        string status
-        decimal subtotal
-        decimal gst_amount
-        decimal total_amount
-        string idempotency_key UK
-        text notes
-        datetime confirmed_at
-        datetime dispatched_at
-        datetime delivered_at
-        datetime cancelled_at
-    }
-
-    ORDER_ITEM {
-        int order_id FK
-        int product_id FK
-        int quantity
-        decimal unit_price
-        decimal gst_rate
-        decimal gst_amount
-        decimal line_total
-    }
-```
-
-### 1. Product
-- **Purpose**: Represents an automotive spare part in the distributor's catalogue (~600 SKUs).
-- **Key Attributes**: Unique `sku`, indexed `name`, `description`, `category`, current catalogue `price` (DecimalField in INR), `supplier_id`, `supplier_sku`, `is_active`, timestamps.
-- **Constraints**: Database check constraint enforcing `price >= 0.00`.
-
-### 2. Inventory
-- **Purpose**: Tracks physical stock quantity and reservations at the Bengaluru distribution facility.
-- **Cardinality**: `1:1` relationship with `Product` (`OneToOneField`), reflecting single-warehouse central stock tracking.
-- **Key Attributes**: `product`, `quantity` (on-hand physical stock), `reserved_quantity` (stock committed to confirmed orders), `reorder_threshold`, `last_restocked_at`.
-- **Constraints**: Check constraints enforcing `quantity >= 0` and `reserved_quantity >= 0`.
-
-### 3. Dealer
-- **Purpose**: Represents an authorized B2B dealership customer in South India.
-- **Key Attributes**: Unique `dealer_code`, `business_name`, `contact_person`, unique `email`, `phone`, unique `gstin` (15-character GST Identification Number), address, `city`, `state`, `credit_limit`, `outstanding_balance`, `is_active`.
-- **Constraints**: Check constraint enforcing non-negative `credit_limit >= 0.00`.
-
-### 4. Order
-- **Purpose**: Represents a purchase order placed by a dealer.
-- **Relationships**: `dealer = ForeignKey(Dealer, on_delete=models.PROTECT)` to guarantee referential integrity and prevent accidental deletion of dealers with order history.
-- **Key Attributes**: Unique `order_number`, `status` (`DRAFT`, `CONFIRMED`, `DISPATCHED`, `DELIVERED`, `CANCELLED`), monetary fields (`subtotal`, `gst_amount`, `total_amount`), unique `idempotency_key` (duplicate submission prevention), status transition timestamps (`confirmed_at`, `dispatched_at`, `delivered_at`, `cancelled_at`).
-- **Constraints & Indexes**:
-  - Check constraints for non-negative monetary totals (`subtotal >= 0`, `gst_amount >= 0`, `total_amount >= 0`).
-  - Composite indexes on `['dealer', 'status']` and `['status', 'created_at']` for query performance.
-
-### 5. OrderItem
-- **Purpose**: Represents an individual product line in an order.
-- **Relationships**:
-  - `order = ForeignKey(Order, on_delete=models.CASCADE)`
-  - `product = ForeignKey(Product, on_delete=models.PROTECT)`: Preserves catalogue part integrity so parts with order history cannot be purged from the database.
-- **Price Locking & Snapshots**:
-  - Stores snapshot values for `unit_price`, `gst_rate`, `gst_amount`, and `line_total` at the time of order placement/confirmation.
-  - Insulates historical orders and tax audit trails from subsequent catalogue price adjustments.
-- **Constraints**:
-  - Unique constraint `UniqueConstraint(fields=['order', 'product'])` preventing duplicate lines for the same part within an order.
-  - Check constraints enforcing `quantity >= 1`, non-negative `unit_price`, `gst_rate`, `gst_amount`, and `line_total`.
-
----
-
-## Installation & Running Django Checks
-
-### 1. Prerequisites
-- Python 3.10+ (Python 3.13 recommended)
-- `pip`
-
-### 2. Environment Setup
-Create and activate a virtual environment:
+### Step 1: Clone Repository & Create Virtual Environment
 ```bash
-# Windows PowerShell
+git clone https://github.com/Rithika-Gurusamy/vikmo.git
+cd vikmo
+
+# Windows (PowerShell)
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
@@ -193,50 +48,146 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Install project dependencies:
+### Step 2: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run Django System Checks
-Validate the project configuration and model definitions without requiring a live database connection:
-```bash
-python manage.py check
-```
-
-Validate migration status:
-```bash
-python manage.py makemigrations --check --dry-run
-```
-
----
-
-## Configuring PostgreSQL Database via Environment Variables
-
-DealerDesk reads its PostgreSQL connection parameters from environment variables (or a local `.env` file).
-
-### Step 1: Create `.env` file
+### Step 3: Configure Environment Variables
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
+Ensure `.env` contains your PostgreSQL credentials and Gemini API key:
+```ini
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,testserver
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/vikmo
+GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-### Step 2: Configure PostgreSQL variables
-Update `.env` with your PostgreSQL database credentials:
-
-| Environment Variable | Description | Default (if unset) |
-|---|---|---|
-| `DB_NAME` | PostgreSQL database name | `dealerdesk` |
-| `DB_USER` | PostgreSQL user | `postgres` |
-| `DB_PASSWORD` | PostgreSQL user password | `""` (empty) |
-| `DB_HOST` | PostgreSQL host address | `localhost` |
-| `DB_PORT` | PostgreSQL port | `5432` |
-| `SECRET_KEY` | Django secret key | Development fallback |
-| `DEBUG` | Enable/disable debug mode (`True`/`False`) | `True` |
-| `ALLOWED_HOSTS` | Comma-separated allowed hostnames | `localhost,127.0.0.1` |
-
-### Step 3: Apply Migrations (When PostgreSQL is running)
-Once PostgreSQL is running and the database is created, apply the migrations:
+### Step 4: Run Migrations & Seed Data
 ```bash
+# Apply PostgreSQL database schema
 python manage.py migrate
+
+# Seed 600 catalogue products, 600 inventory ledgers, and 25 dealers (Idempotent)
+python manage.py seed_data
+```
+
+### Step 5: Start Development Server
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+Open **`http://localhost:8000/`** in your browser to access the Dealer Portal and Assistant.
+
+---
+
+## 4. How to Run Tests
+
+### Unit & Integration Tests (Built-in Django Test Runner)
+All tests run with isolated in-memory test databases and mock handlers (zero API tokens used):
+
+```bash
+# Run all project test suites
+python manage.py test
+
+# Run AI Dealer Assistant test suite specifically (14 tests covering tools, memory, citations, & prompt injections)
+python manage.py test assistant.tests
+
+# Run core inventory and model tests
+python manage.py test inventory.tests
+```
+
+### Contract Smoke Test
+Run the official assignment contract validation script against your local server:
+
+```bash
+# Test Core APIs and Dealer Assistant contract endpoints
+python smoke_test.py --base-url http://localhost:8000 --track aiml
+```
+
+---
+
+## 5. Optional Parts Attempted
+
+1. **Interactive Full-Stack Web Portal (`http://localhost:8000/`)**:
+   - Built a complete B2B ordering interface featuring:
+     - Real-time catalogue search and category pill filtering directly bound to PostgreSQL.
+     - Live warehouse stock status badges (`In Stock`, `Low Stock`, `Out of Stock`).
+     - Persistent shopping cart drawer with client-side 18% GST estimate.
+     - Order history view displaying real database consignment snapshots.
+     - Embedded chat interface with demo prompt chips and live tool execution badges.
+2. **Multi-Provider Dynamic LLM Engine**:
+   - Engineered [`assistant/provider.py`](assistant/provider.py) to dynamically inspect runtime environment variables and seamlessly switch between Gemini, Groq, OpenAI, and Anthropic.
+3. **Automated Error Resilience**:
+   - Custom exception handler ([`dealerdesk/exceptions.py`](dealerdesk/exceptions.py)) standardizing all DRF errors into the exact contract JSON structure: `{"error": {"code": "...", "message": "...", "details": []}}`.
+
+---
+
+## 6. Key Engineering Assumptions
+
+1. **Single Central Warehouse Distribution**:
+   - All 600 catalogue products are stored at and dispatched from a single central distributor facility in Bengaluru, modeled as a strict `1:1` relationship between `Product` and `Inventory`.
+2. **Statutory 18% GST Calculation**:
+   - Automotive spare parts in India fall under standard GST brackets. Calculations use high-precision Python `Decimal` arithmetic rounded to 2 decimal places using `ROUND_HALF_UP` (`line_tax = (line_subtotal * Decimal("0.18")).quantize(Decimal("0.01"))`).
+3. **Database Grounding for Alphanumeric Spare Parts**:
+   - Dense vector embeddings frequently smooth out fine-grained alphanumeric distinctions (e.g. confusing `BRK-1044` with `BRK-1045`). We implemented a two-stage hybrid retrieval strategy: indexed database `Q` filtering followed by domain-weighted scoring (+200 for exact SKU, +70 for vehicle fitment) to eliminate hallucinated part numbers.
+4. **Untrusted External Data Guardrails**:
+   - Supplier descriptions and catalogue texts are treated strictly as read-only data, never instructions. The assistant tool-calling loop isolates database writes exclusively to `create_draft_order`, which enforces `status="DRAFT"`.
+5. **Bounded Session Memory**:
+   - Dialogue history in [`assistant/memory.py`](assistant/memory.py) is capped at 24 messages (~12 conversation turns) per `session_id` using a thread-safe deque. Re-accessing a session with a different `dealer_id` purges memory to eliminate cross-dealer data leakage.
+
+---
+
+## 7. Project Directory Structure
+
+```
+vikmo/
+├── .env.example                       # Documented environment variables template
+├── .gitignore                         # Git exclusion rules (.env, venv, cache)
+├── requirements.txt                   # Production dependencies (Django, DRF, psycopg, openai)
+├── manage.py                          # Django management CLI entry point
+├── README.md                          # Repository documentation & guide
+├── DECISIONS.md                       # Detailed answers to the 8 AI/ML track architectural questions
+├── smoke_test.py                      # Contract compliance test runner
+│
+├── data/                              # Provided dataset files (CSV)
+│   ├── catalogue.csv                  # 600 automotive spare parts
+│   ├── dealers.csv                    # 25 authorized South India dealers
+│   ├── sales_history.csv              # Historical transaction records
+│   ├── lead_times.csv                 # Supplier fulfillment lead times
+│   ├── festival_calendar.csv          # Regional South Indian festival dates
+│   └── promo_calendar.csv             # Marketing promotional schedules
+│
+├── dealerdesk/                        # Django Project Configuration
+│   ├── settings.py                    # App configuration, PostgreSQL DB backend, DRF settings
+│   ├── urls.py                        # Root URL routing & Swagger UI endpoints
+│   ├── exceptions.py                  # Contract-compliant custom API exception handler
+│   └── wsgi.py                        # WSGI server entry point
+│
+├── inventory/                         # Core Inventory, Catalogue & Order Engine
+│   ├── models.py                      # Models: Product, Inventory, Dealer, Order, OrderItem
+│   ├── views.py                       # REST API Views: /api/products/, /api/inventory/, /api/orders/
+│   ├── serializers.py                 # DRF Serializers with field-level validators
+│   ├── urls.py                        # Endpoint route mappings
+│   ├── tests.py                       # Model integrity and API endpoint tests
+│   └── management/commands/
+│       └── seed_data.py               # Idempotent CSV database seeder
+│
+├── assistant/                         # GenAI Dealer Assistant Module (§9)
+│   ├── views.py                       # API View: POST /api/assistant/chat/
+│   ├── service.py                     # System prompt, guardrails, and citation verification
+│   ├── provider.py                    # Multi-turn ReAct tool execution loop & Gemini provider
+│   ├── tools.py                       # Tools: search_parts, check_stock, create_draft_order
+│   ├── memory.py                      # Thread-safe in-memory session history store
+│   ├── serializers.py                 # Request and response contract schemas
+│   └── tests.py                       # 14 unit tests covering ReAct loop, tools, & security
+│
+├── templates/dealer/                  # Dealer Portal Presentation Layer
+│   └── index.html                     # Responsive single-page application dashboard
+│
+└── static/dealer/                     # Portal Static Assets
+    ├── css/styles.css                 # Custom CSS design system (dark sidebar, modern typography)
+    └── js/app.js                      # Vanilla JavaScript frontend controller & live API bindings
 ```
