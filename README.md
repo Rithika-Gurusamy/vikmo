@@ -1,7 +1,7 @@
 # DealerDesk — B2B Automotive Spare Parts & AI Dealer Assistant
 
 > **Assignment Track**: `aiml` (AI / ML Track)  
-> **Video Walkthrough**: `[PASTE YOUR UNLISTED YOUTUBE / LOOM / DRIVE LINK HERE]`
+> **Video Walkthrough**: [https://youtu.be/2cmcUrVs8Ok](https://youtu.be/2cmcUrVs8Ok)
 
 ---
 
